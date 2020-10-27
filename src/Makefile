@@ -1,9 +1,9 @@
-SOURCES = $(shell ls *.c | grep -v mod)
-OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
+obj-m = hello_dev_char.o hello_ioctl.o hello_log.o hello_proc_char.o make_root.o
+KERNEL_VERSION=5.4
 
 all: 
 	echo $(OBJECTS)
-	make -C ../linux-4.19.87 M=$(PWD) obj-m="$(OBJECTS)" modules
+	make -C ../linux-$(KERNEL_VERSION) M=$(PWD) modules
 
 clean:
-	make -C ../linux-4.19.87 M=$(PWD) obj-m="$(OBJECTS)" clean
+	make -C ../linux-$(KERNEL_VERSION) M=$(PWD) clean
