@@ -1,5 +1,5 @@
 all: env modules
-clean: env-clean modules-clean
+clean: modules-clean env-clean
 
 modules: env
 	cd src; make
@@ -11,7 +11,7 @@ modules-clean:
 env: apt-deps kernel busybox filesystem
 
 env-clean:
-	rm -rf fs bzImage linux-4.19.87 busybox-1.32.0
+	rm -rf bzImage linux-4.19.87 busybox-1.32.0
 
 apt-deps:
 	sudo apt-get install -y bison flex libelf-dev cpio build-essential qemu-system-x86
