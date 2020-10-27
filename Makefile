@@ -13,7 +13,7 @@ env-clean:
 	rm -rf fs bzImage linux-4.19.87 busybox-1.32.0
 
 apt-deps:
-	sudo apt-get install -y bison flex libelf-dev cpio build-essential
+	sudo apt-get install -y bison flex libelf-dev cpio build-essential qemu-system-x86
 
 filesystem: busybox-1.32.0/_install
 	cd fs && mkdir -p bin sbin etc proc sys usr/bin usr/sbin root home/ctf
