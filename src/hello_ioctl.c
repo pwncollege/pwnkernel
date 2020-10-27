@@ -34,9 +34,9 @@ static long device_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 {
         printk(KERN_ALERT "Got ioctl argument %d!", ioctl_num);
         if (ioctl_num == 1)
-        	copy_to_user((void _user *)ioctl_param, message, 128);
+        	printk(KERN_ALERT "Write %ld bytes to userspace!", copy_to_user((char *)ioctl_param, message, 128));
         if (ioctl_num == 2)
-        	copy_from_user(message, (void _user *)ioctl_param, 128);
+        	printk(KERN_ALERT "Read %ld bytes from userspace!", copy_from_user(message, (char *)ioctl_param, 128));
         return 0;
 }
 
