@@ -7,13 +7,17 @@ modules: env
 modules-clean:
 	cd src; make clean
 
-env: apt-deps kernel busybox fs
+env: apt-deps kernel busybox filesystem
 
 env-clean:
 	rm -rf fs bzImage linux-4.19.87 busybox-1.32.0
 
 apt-deps:
 	sudo apt-get install -y bison flex libelf-dev cpio build-essential
+
+filesystem: busybox-1.32.0/_install
+	cd fs && mkdir -p bin sbin etc proc sys usr/bin usr/sbin root home/ctf
+	cp -a busybox-1.32.0/_install/* fs
 
 busybox: busybox-1.32.0/_install
 
@@ -22,17 +26,6 @@ busybox-1.32.0/_install: busybox-1.32.0
 	sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/g' busybox-1.32.0/.config
 	make -C busybox-1.32.0 -j16
 	make -C busybox-1.32.0 install
-
-busybox-1.32.0:
-	curl https://busybox.net/downloads/busybox-1.32.0.tar.bz2 | tar xj
-
-fs: init busybox-1.32.0/_install
-	mkdir -p fs
-	cd fs && mkdir -p bin sbin etc proc sys usr/bin usr/sbin root home/ctf
-	echo 'root:x:0:0:root:/root:/bin/sh' >> fs/etc/passwd
-	echo 'ctf:x:1000:1000:ctf:/home/ctf:/bin/sh' >> fs/etc/passwd
-	cp init fs
-	cp -a busybox-1.32.0/_install/* fs
 
 kernel: bzImage
 
@@ -61,5 +54,10 @@ bzImage: linux-4.19.87
 	make -C linux-4.19.87 -j16 bzImage
 	cp linux-4.19.87/arch/x86/boot/bzImage .
 
+# source downloads
+
 linux-4.19.87:
 	curl https://mirrors.edge.kernel.org/pub/linux/kernel/v4.x/linux-4.19.87.tar.gz | tar xz
+busybox-1.32.0:
+	curl https://busybox.net/downloads/busybox-1.32.0.tar.bz2 | tar xj
+
