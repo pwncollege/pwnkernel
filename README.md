@@ -17,3 +17,5 @@ Running the kernel:
 ```
 $ ./launch.sh
 ```
+
+All modules will be loaded at kernel startup, and the host's home directory will be mounted as /home/ctf in the guest.

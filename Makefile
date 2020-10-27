@@ -1,4 +1,5 @@
 all: env modules
+clean: env-clean modules-clean
 
 modules: env
 	cd src; make
