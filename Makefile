@@ -7,11 +7,13 @@ modules: env
 
 modules-clean:
 	cd src; make clean
+	rm -f fs/*.ko
 
 env: apt-deps kernel busybox filesystem
 
 env-clean:
 	rm -rf bzImage linux-4.19.87 busybox-1.32.0
+	git clean -fxxd fs
 
 apt-deps:
 	sudo apt-get install -y bison flex libelf-dev cpio build-essential qemu-system-x86
