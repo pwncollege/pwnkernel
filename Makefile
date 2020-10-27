@@ -1,13 +1,11 @@
-headers=4.19.87
-obj-m += $(wildcard src/*.c)
-
 all: env modules
 
-modules:
-	make -C src
+modules: env
+	cd src; make
+	cp src/*.ko fs/
 
 modules-clean:
-	make -C src clean
+	cd src; make clean
 
 env: apt-deps kernel busybox fs
 

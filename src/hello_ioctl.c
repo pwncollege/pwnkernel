@@ -1,49 +1,11 @@
+#include <linux/uaccess.h>
+#include <linux/proc_fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/cred.h>
 #include <linux/fs.h>
-#include <linux/uaccess.h>
 
 MODULE_LICENSE("GPL"); 
-
-static int device_open(struct inode *, struct file *);
-static int device_release(struct inode *, struct file *);
-static ssize_t device_read(struct file *, char *, size_t, loff_t *);
-static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
-static ssize_t device_ioctl(struct file *, const char *, unsigned long, unsigned long);
-
-#define DEVICE_NAME "chardev"
-#define BUF_LEN 80
-
-static int major_number;
-
-static struct file_operations fops = {
-  	.read = device_read,
-  	.write = device_write,
-  	.compat_ioctl = device_ioctl,
-  	.open = device_open,
-  	.release = device_release
-};
-
-int init_module(void)
-{
-    	printk(KERN_ALERT "Hello pwn-college!");
-  	major_number = register_chrdev(0, "pwn-college", &fops);
-
-  	if (major_number < 0) {
-    		printk(KERN_ALERT "Registering char device failed with %d\n", major_number);
-    		return major_number;
-  	}
-
-  	printk(KERN_INFO "I was assigned major number %d.\n", major_number);
-  	printk(KERN_INFO "Create device with: 'mknod /dev/pwn-college c %d 0'.\n", major_number);
-  	return 0;
-}
-
-void cleanup_module(void)
-{
-  	unregister_chrdev(major_number, DEVICE_NAME);
-    	printk(KERN_ALERT "Goodbye pwn-college!");
-}
 
 static int device_open(struct inode *inode, struct file *filp)
 {
@@ -59,19 +21,45 @@ static int device_release(struct inode *inode, struct file *filp)
 
 static ssize_t device_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
 {
-	char *msg = "Hello pwn-college!\n";
-    	printk(KERN_ALERT "Device read: %p %ld %p", buffer, length, offset);
-	return strlen(msg) - copy_to_user(buffer, msg, strlen(msg));
+	return -EINVAL;
 }
 
 static ssize_t device_write(struct file *filp, const char *buf, size_t len, loff_t *off)
 {
-  	printk(KERN_ALERT "Sorry, this operation isn't supported.\n");
   	return -EINVAL;
 }
 
-static long device_ioctl(struct file *filp, const char *buf, unsigned long ioctl_num, unsigned long ioctl_param)
+char message[128];
+static long device_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
-  	printk(KERN_ALERT "Got ioctl argument %ld!", ioctl_num);
+        printk(KERN_ALERT "Got ioctl argument %d!", ioctl_num);
+        if (ioctl_num == 1)
+        	copy_to_user((void _user *)ioctl_param, message, 128);
+        if (ioctl_num == 2)
+        	copy_from_user(message, (void _user *)ioctl_param, 128);
+        return 0;
+}
+
+static struct file_operations fops = {
+  	.read = device_read,
+  	.write = device_write,
+  	.compat_ioctl = device_ioctl,
+  	.open = device_open,
+  	.release = device_release
+};
+
+struct proc_dir_entry *proc_entry = NULL;
+
+int init_module(void)
+{
+    	printk(KERN_ALERT "Hello pwn-college!");
+    	proc_entry = proc_create("pwn-college-ioctl", 0666, NULL, &fops);
   	return 0;
 }
+
+void cleanup_module(void)
+{
+	if (proc_entry) proc_remove(proc_entry);
+    	printk(KERN_ALERT "Goodbye pwn-college!");
+}
+

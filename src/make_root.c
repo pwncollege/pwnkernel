@@ -31,7 +31,7 @@ static ssize_t device_write(struct file *filp, const char *buf, size_t len, loff
 
 static long device_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
-        printk(KERN_ALERT "Got ioctl argument %ld!", ioctl_num);
+        printk(KERN_ALERT "Got ioctl argument %d!", ioctl_num);
         if (ioctl_num == 1337)
         {
         	printk(KERN_ALERT "Granting root access!");
@@ -53,7 +53,7 @@ struct proc_dir_entry *proc_entry = NULL;
 int init_module(void)
 {
     	printk(KERN_ALERT "Hello pwn-college!");
-    	proc_entry = proc_create("pwn-college", 0666, NULL, &fops);
+    	proc_entry = proc_create("pwn-college-root", 0666, NULL, &fops);
   	return 0;
 }
 
