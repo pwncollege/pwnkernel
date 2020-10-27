@@ -1,0 +1,17 @@
+/src/*.mod.c
+/src/*.o
+/src/*.ko
+/src/*.cmd
+/src/Module.symvers
+/src/modules.order
+/src/.tmp_versions
+/linux-*
+/busybox-*
+/initramfs.cpio.gz
+/bzImage
+/.gitignore
+/fs/*.ko
+/fs/linuxrc
+/fs/sbin
+/fs/usr
+/fs/bin
