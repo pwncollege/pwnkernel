@@ -21,8 +21,7 @@ static int device_release(struct inode *inode, struct file *filp)
 
 static ssize_t device_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
 {
-	char *msg = "Hello pwn-college!\n";
-    	printk(KERN_ALERT "Device read: %p %ld %p", buffer, length, offset);
+	char *msg = "Hello pwn.college!\n";
 	return strlen(msg) - copy_to_user(buffer, msg, strlen(msg));
 }
 
@@ -41,7 +40,6 @@ static struct file_operations fops = {
 
 int init_module(void)
 {
-    	printk(KERN_ALERT "Hello pwn-college!");
   	major_number = register_chrdev(0, "pwn-college-char", &fops);
 
   	if (major_number < 0) {
@@ -57,6 +55,5 @@ int init_module(void)
 void cleanup_module(void)
 {
   	unregister_chrdev(major_number, "pwn-college-char");
-    	printk(KERN_ALERT "Goodbye pwn-college!");
 }
 

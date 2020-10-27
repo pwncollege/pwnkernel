@@ -52,7 +52,6 @@ struct proc_dir_entry *proc_entry = NULL;
 
 int init_module(void)
 {
-    	printk(KERN_ALERT "Hello pwn-college!");
     	proc_entry = proc_create("pwn-college-root", 0666, NULL, &fops);
   	return 0;
 }
@@ -60,6 +59,5 @@ int init_module(void)
 void cleanup_module(void)
 {
 	if (proc_entry) proc_remove(proc_entry);
-    	printk(KERN_ALERT "Goodbye pwn-college!");
 }
 
