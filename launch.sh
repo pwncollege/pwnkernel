@@ -12,4 +12,4 @@ popd
 	-nographic \
 	-monitor none \
 	-s \
-	-append "console=ttyS0"
+	-append "console=ttyS0 nokaslr"
