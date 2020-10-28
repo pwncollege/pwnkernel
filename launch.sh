@@ -1,9 +1,15 @@
 #!/bin/bash
 
+#
+# build root fs
+#
 pushd fs
 find . -print0 | cpio --null -ov --format=newc | gzip -9 > ../initramfs.cpio.gz
 popd
 
+#
+# launch
+#
 /usr/bin/qemu-system-x86_64 \
 	-kernel linux-5.4/arch/x86/boot/bzImage \
 	-initrd $PWD/initramfs.cpio.gz \
