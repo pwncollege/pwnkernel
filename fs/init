@@ -18,5 +18,7 @@ Welcome to pwn.college
 
 
 EOF
+chmod 600 /flag
+chown 0.0 /flag
 /bin/sh
 #exec su -l ctf
