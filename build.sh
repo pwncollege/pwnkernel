@@ -6,15 +6,18 @@ export BUSYBOX_VERSION=1.32.0
 #
 # dependencies
 #
-sudo apt-get install -y bison flex libelf-dev cpio build-essential qemu-system-x86
+echo "[+] Checking / installing dependencies..."
+sudo apt-get -q install -y bison flex libelf-dev cpio build-essential qemu-system-x86
 
 #
 # linux kernel
 #
 
+echo "[+] Downloading kernel..."
 wget -q -c https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-$KERNEL_VERSION.tar.gz
 [ -e linux-$KERNEL_VERSION ] || tar xzf linux-$KERNEL_VERSION.tar.gz
 
+echo "[+] Building kernel..."
 make -C linux-$KERNEL_VERSION defconfig
 echo "CONFIG_NET_9P=y" >> linux-$KERNEL_VERSION/.config
 echo "CONFIG_NET_9P_DEBUG=n" >> linux-$KERNEL_VERSION/.config
@@ -50,9 +53,12 @@ make -C linux-$KERNEL_VERSION -j16 bzImage
 # Busybox
 #
 
+echo "[+] Downloading busybox..."
 wget -q -c https://busybox.net/downloads/busybox-$BUSYBOX_VERSION.tar.bz2
 [ -e busybox-$BUSYBOX_VERSION ] || tar xzf busybox-$BUSYBOX_VERSION.tar.bz2
 
+echo "[+] Building busybox..."
+wget -q -c https://busybox.net/downloads/busybox-$BUSYBOX_VERSION.tar.bz2
 make -C busybox-$BUSYBOX_VERSION defconfig
 sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/g' busybox-$BUSYBOX_VERSION/.config
 make -C busybox-$BUSYBOX_VERSION -j16
@@ -62,6 +68,7 @@ make -C busybox-$BUSYBOX_VERSION install
 # filesystem
 #
 
+echo "[+] Building filesystem..."
 cd fs
 mkdir -p bin sbin etc proc sys usr/bin usr/sbin root home/ctf
 cd ..
@@ -71,6 +78,7 @@ cp -a busybox-$BUSYBOX_VERSION/_install/* fs
 # modules
 #
 
+echo "[+] Building modules..."
 cd src
 make
 cd ..
