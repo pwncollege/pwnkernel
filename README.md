@@ -1,17 +1,48 @@
-# pwn.college helper environment for kernel development and exploitation
+# Linux kernel exploit easy setup
 
-Pre-requistite:
+This is a simple fork from [pwnkernel](https://github.com/pwncollege/pwnkernel). I just adapted and removed a few things to make it specific to kernel exploit development.
 
-Building the kernel, busybox, and demo modules:
+## Dependencies
 
+```sh
+sudo apt-get -q update
+sudo apt-get -q install -y bison flex libelf-dev cpio build-essential libssl-dev qemu-system-x86
 ```
-$ ./build.sh
+
+## Kernel version
+
+A `KERNEL_VERSION` variable is set up in `build.sh`.
+
+## Building
+
+Building the kernel and busybox:
+
+```sh
+./build.sh
 ```
+
+### KASAN
+
+By default, the kernel is built with `KASAN` to make bug triggering easier.
+Comment the following line to build it normally:
+
+```makefile
+  echo "CONFIG_KASAN=y" >> linux-$KERNEL_VERSION/.config
+```
+
+Feel free to add other sanitizers :^)
+
+## Running
 
 Running the kernel:
 
-```
-$ ./launch.sh
+```text
+./launch.sh
+Usage: ./launch [arguments]
+
+Arguments:
+  -D <path>     directory to mount in VM
+  -d            debug mode (add -S in QEMU)
 ```
 
-All modules will be in `/`, ready to be `insmod`ed, and the host's home directory will be mounted as `/home/ctf` in the guest.
+The host directory specified by the `-D` argument will be mounted inside `/home/ctf` guest directory.

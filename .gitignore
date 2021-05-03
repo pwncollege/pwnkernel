@@ -1,11 +1,3 @@
-/src/*.mod.c
-/src/*.o
-/src/*.ko
-/src/*.cmd
-/src/*.mod
-/src/Module.symvers
-/src/modules.order
-/src/.tmp_versions
 /linux-*
 /busybox-*
 /initramfs.cpio.gz
