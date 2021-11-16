@@ -1,0 +1,38 @@
+#!/bin/sh
+
+if [ $$ -ne 1 ]
+then
+	echo "This script must be run INSIDE your VM, as PID 1! The \"vm\" script does this automatically: run that!"
+	exit 1
+fi
+
+set -e
+set -x
+
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devpts -o x-mount.mkdir devpts /dev/pts
+mount -t 9p -o trans=virtio,version=9p2000.L,nosuid /home/ /home/
+
+# `hostname` command does not allow '_'
+python - <<'EOF'
+import socket
+with open("/etc/hostname") as f:
+  hostname = f.read().strip()
+  socket.sethostname(f"vm_{hostname}")
+EOF
+
+ip link set dev lo up
+ip addr add 10.0.2.15/24 dev eth0
+ip route add 10.0.2.0/24 via 10.0.2.2 dev eth0 2>/dev/null || true  # Error: Nexthop has invalid gateway.
+ip link set dev eth0 up
+
+find /challenge -name '*.ko' -exec /usr/sbin/insmod {} \;
+
+service ssh start
+
+if [ -e /usr/sbin/docker-init ]; then
+    exec /usr/sbin/docker-init /usr/bin/dmesg -- --follow
+else
+    exec /usr/bin/dmesg --follow
+fi

@@ -1,0 +1,193 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import socket
+import subprocess
+import time
+import grp
+import argparse
+import random
+
+DIR=os.path.dirname(os.path.abspath(__file__))
+
+def initialize():
+    os.setegid(os.geteuid())
+    try:
+        os.mkdir("/tmp/vm")
+    except FileExistsError:
+        pass
+
+
+def vm_hostname():
+    with open("/etc/hosts") as f:
+        if "127.0.0.1\tvm" in f.read():
+            return "vm"
+        else:
+            return "127.0.0.1"
+
+
+def allow_debug():
+    groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
+    return os.getuid() == 0 or "sudo" in groups
+
+
+def execve(argv):
+    os.seteuid(os.getuid())
+    os.setegid(os.getgid())
+    os.execve(argv[0], argv, os.environ)
+
+
+def start(ssh_port):
+    qemu_argv = [
+        "/usr/bin/qemu-system-x86_64",
+        "-kernel", f"{DIR}/bzImage",
+        "-fsdev", "local,id=rootfs,path=/,security_model=passthrough",
+        "-device", "virtio-9p-pci,fsdev=rootfs,mount_tag=/dev/root",
+        "-fsdev", "local,id=homefs,path=/home/,security_model=passthrough",
+        "-device", "virtio-9p-pci,fsdev=homefs,mount_tag=/home/",
+        "-device", "e1000,netdev=net0",
+        "-netdev", f"user,id=net0,hostfwd=tcp::{ssh_port}-:22",
+        "-m", "2G",
+        "-smp", "2",
+        "-nographic",
+        "-monitor", "none",
+        "-append", f"rw rootfstype=9p rootflags=trans=virtio console=ttyS0 init={DIR}/init nokaslr",
+    ]
+
+    if allow_debug():
+        qemu_argv.append("-s")
+
+    argv = [
+        "/usr/sbin/start-stop-daemon",
+        "--start",
+        "--pidfile", "/tmp/vm/vm.pid",
+        "--make-pidfile",
+        "--background",
+        "--no-close",
+        "--quiet",
+        "--startas", qemu_argv[0],
+        "--",
+        *qemu_argv[1:]
+    ]
+
+    subprocess.run(argv,
+                   stdin=subprocess.DEVNULL,
+                   stdout=open("/tmp/vm/vm.log", "a"),
+                   stderr=subprocess.STDOUT)
+
+
+def stop():
+    argv = [
+        "/usr/sbin/start-stop-daemon",
+        "--stop",
+        "--pidfile", "/tmp/vm/vm.pid",
+        "--remove-pidfile",
+        "--quiet",
+    ]
+
+    subprocess.run(argv,
+                   stdin=subprocess.DEVNULL,
+                   stdout=open("/tmp/vm/vm.log", "a"),
+                   stderr=subprocess.STDOUT)
+
+
+def wait():
+    for _ in range(50):
+        try:
+            connection = socket.create_connection((vm_hostname(), 22), timeout=30)
+        except ConnectionRefusedError:
+            pass
+        else:
+            data = connection.recv(3)
+            connection.close()
+            if data == b"SSH":
+                break
+        time.sleep(0.1)
+    else:
+        print("Error: could not connect to vm!", file=sys.stderr)
+        exit(1)
+
+
+def connect(ssh_port):
+    wait()
+    execve(["/usr/bin/ssh", vm_hostname(), ssh_port])
+
+
+def exec_(*args):
+    wait()
+    execve(["/usr/bin/ssh", vm_hostname(), "--", *args])
+
+
+def debug():
+    try:
+        socket.create_connection((vm_hostname(), 1234), timeout=30)
+    except ConnectionRefusedError:
+        if allow_debug():
+            print("Error: could not connect to debug!", file=sys.stderr)
+        else:
+            print("Error: do not have permission to debug!", file=sys.stderr)
+        exit(1)
+    execve([
+        "/usr/bin/gdb",
+        "--ex", "target remote localhost:1234",
+        "{DIR}/vmlinux",
+    ])
+
+
+def logs():
+    if os.path.exists("/tmp/vm/vm.log"):
+        execve([
+            "/usr/bin/tail",
+            "-F",
+            "-n+1",
+            "/tmp/vm/vm.log",
+        ])
+
+def get_port(port=22):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", port))
+        return port
+    except socket.error:
+        newport = max(port+1, 10000)
+        print(f"Warning: port {port} is in use. Trying {newport}.")
+        return get_port(newport)
+
+def main():
+    initialize()
+    default_port = get_port()
+    print(f"Will use port {default_port} unless otherwise specified!")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--port", default=default_port, help="the ssh port run")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    connect_parser = subparsers.add_parser("connect", help="connect to vm")
+    exec_parser = subparsers.add_parser("exec", help="exec command in vm")
+    exec_parser.add_argument("exec_command")
+    exec_parser.add_argument("exec_command_args", nargs=argparse.REMAINDER)
+    start_parser = subparsers.add_parser("start", help="start vm")
+    stop_parser = subparsers.add_parser("stop", help="stop vm")
+    restart_parser = subparsers.add_parser("restart", help="restart vm")
+    debug_parser = subparsers.add_parser("debug", help="debug vm")
+    logs_parser = subparsers.add_parser("logs", help="show vm logs")
+    args = parser.parse_args()
+
+    commands = {
+        "connect": lambda: (start(args.port), connect(args.port)),
+        "exec": lambda: (start(), exec_(args.exec_command, *args.exec_command_args)),
+        "start": lambda: (stop(), start(args.port)),
+        "stop": lambda: stop(),
+        "restart": lambda: (stop(), start(args.port)),
+        "debug": lambda: debug(),
+        "logs": lambda: logs(),
+    }
+
+    try:
+        commands[args.command]()
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == '__main__':
+    main()
