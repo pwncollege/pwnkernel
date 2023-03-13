@@ -48,6 +48,11 @@ echo "CONFIG_DEBUG_FS=y" >> linux-$KERNEL_VERSION/.config
 echo "CONFIG_DEBUG_INFO_DWARF4=y" >> linux-$KERNEL_VERSION/.config
 echo "CONFIG_DEBUG_INFO_BTF=y" >> linux-$KERNEL_VERSION/.config
 echo "CONFIG_FRAME_POINTER=y" >> linux-$KERNEL_VERSION/.config
+
+sed -i 'N;s/WARN("missing symbol table");\n\t\treturn -1;/\n\t\treturn 0;\n\t\t\/\/ A missing symbol table is actually possible if its an empty .o file.  This can happen for thunk_64.o./g' linux-$KERNEL_VERSION/tools/objtool/elf.c
+
+sed -i 's/unsigned long __force_order/\/\/ unsigned long __force_order/g' linux-$KERNEL_VERSION/arch/x86/boot/compressed/pgtable_64.c
+
 make -C linux-$KERNEL_VERSION -j16 bzImage
 
 #
