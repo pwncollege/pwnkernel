@@ -37,12 +37,19 @@ static ssize_t device_write(struct file *filp, const char *buf, size_t len, loff
 char message[16];
 static long device_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
-        printk(KERN_ALERT "Got ioctl argument %#x!", ioctl_num);
-        if (ioctl_num == PWN_GET && strcmp(message, "PASSWORD") == 0)
-        	printk(KERN_ALERT "Write %ld bytes to userspace!\n", copy_to_user((char *)ioctl_param, flag, 128));
-        else if (ioctl_num == PWN_SET)
-        	printk(KERN_ALERT "Read %ld bytes from userspace!\n", copy_from_user(message, (char *)ioctl_param, 16));
-        return 0;
+	int is_copy_invalid = 0;	
+	printk(KERN_ALERT "Got ioctl argument %#x!", ioctl_num);
+	if (ioctl_num == PWN_GET && strcmp(message, "PASSWORD") == 0) {
+		printk(KERN_ALERT "Writing to userspace!\n");
+		is_copy_invalid = copy_to_user((char *)ioctl_param, flag, 128);
+	} else if (ioctl_num == PWN_SET) {
+		printk(KERN_ALERT "Reading from userspace!\n");
+		is_copy_invalid = copy_from_user(message, (char *)ioctl_param, 16));
+	}
+
+	if (is_copy_invalid)
+		return -EFAULT;
+	return 0;
 }
 
 static struct file_operations fops = {
