@@ -44,7 +44,7 @@ static long device_ioctl(struct file *filp, unsigned int ioctl_num, unsigned lon
 		is_copy_invalid = copy_to_user((char *)ioctl_param, flag, 128);
 	} else if (ioctl_num == PWN_SET) {
 		printk(KERN_ALERT "Reading from userspace!\n");
-		is_copy_invalid = copy_from_user(message, (char *)ioctl_param, 16));
+		is_copy_invalid = copy_from_user(message, (char *)ioctl_param, 16);
 	}
 
 	if (is_copy_invalid)
